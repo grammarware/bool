@@ -4,9 +4,17 @@ module Main
 import IO;
 import ParseTree;
 import domain::Support;
+import Generator;
 
 void main()
 {
-	T = parseBool(|project://bool/code/Sample1.bool|);
-	iprintln(T);
+	for(F <- ["Sample1"])
+	{
+		T = parseBool(|project://bool/code/<F>.bool|);
+		//iprintln(T);
+		writeFile(|project://bool/src/examples/<F>.rsc|,
+			genHeader(F)
+		);
+	}
+	
 }
