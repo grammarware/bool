@@ -1,7 +1,7 @@
 @contributor{Vadim Zaytsev - vadim@grammarware.net}
 module Main
 
-import IO;
+import Prelude;
 import ParseTree;
 import domain::Support;
 import Generator;
@@ -12,9 +12,10 @@ void main()
 	{
 		T = parseBool(|project://bool/code/<F>.bool|);
 		//iprintln(T);
-		writeFile(|project://bool/src/examples/<F>.rsc|,
-			genHeader(F)
-		);
+		str text = genHeader(F) + genStandard(T);
+		for(str name <- domain(T))
+			text += genSD(name, T[name][0], T[name][1]);
+		writeFile(|project://bool/src/examples/<F>.rsc|, text);
 	}
 	
 }
