@@ -1,10 +1,11 @@
+@contributor{Vadim Zaytsev - vadim@grammarware.net}
 module \syntax::Main
 
 extend \syntax::RascalSD;
 extend \syntax::RascalADT;
 
 syntax BOOL
-	= "bind" Language source "~" Language target Binding* bindings
+	= "bind" Language source "~" Language target Binding* bindings L?
 	;
 
 syntax Language
@@ -16,5 +17,5 @@ syntax Binding
 	= ID name ":=" RascalSyntaxDef left "~" RascalAlgebraicDataType right
 	;
 
-lexical ID = [a-z]+ !>> [a-z];
+lexical ID = [A-Za-z]+ !>> [A-Za-z];
 layout L = [\ \t \r \n]* !>> [\ \t \r \n];
