@@ -7,6 +7,22 @@ import ParseTree;
 import domain::Syntax;
 import domain::SyntaxBase;
 
+import domain::radt::Support;
+import domain::rsd::Support;
+
+value(str) getParser(str name, str what)
+{
+	switch(name)
+	{
+		case "RascalSD":
+			return rsdParse;
+		case "RascalADT":
+			return radtParse;
+		default:
+			throw "Unknown <what> language!";
+	}
+}
+
 Bindings parseBool(loc f)
 {
 	lines = readFileLines(f);
@@ -16,19 +32,21 @@ Bindings parseBool(loc f)
 	header = parse(#HeaderBOOL, lines[i]);
 	i+=1;
 	while (trim(lines[i])=="") i+=1;
-	if ((Language)`RascalSD` := header.source
-	&&  (Language)`RascalADT` := header.target)
+	parserSource = getParser("<header.source>", "source");
+	parserTarget = getParser("<header.target>", "target");
+	
+	while(i < size(lines))
 	{
-		while(i < size(lines))
-		{
-			R = parseBindRSDtoRADT(lines[i]);
-			if (R.name in domain(result))
-				throw "Name <R.name> defined twice!";
-			result[R.name] = < R.left, R.right >;
-			i+=1;
-		}		
-	}
-	else
-		throw "Unsupported pair of languages";
+		while (trim(lines[i])=="") i+=1;
+		list[str] B = split(":=", lines[i]);
+		str name = trim(B[0]);
+		B = split("~", B[1]);
+		if (name in domain(result))
+			throw "Name <name> defined twice!";
+		result[name] = < parserSource(B[0]), parserTarget(B[1]) >;
+		i+=1;
+	}		
+
+
 	return result;
 }
