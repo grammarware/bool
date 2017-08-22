@@ -1,5 +1,7 @@
 @contributor{Vadim Zaytsev - vadim@grammarware.net}
-module \syntax::RascalSD
+module domain::rsd::Syntax
+
+import domain::SyntaxBase;
 
 syntax RascalSyntaxDef
 	= "star" "[" RascalSyntaxDef inner "]"
