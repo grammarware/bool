@@ -62,3 +62,24 @@ default str genLex(RascalSyntaxDef x)
 	throw "Non-exhaustive pattern for <x>";
 }
 ///////////////////////////////////////////////////////////////////
+str genADT(str name, (RascalAlgebraicDataType)`.`)
+	= "";
+default str genADT(str name, RascalAlgebraicDataType def)
+	= "alias <name> = <genType(def)>;";
+
+str genType((RascalAlgebraicDataType)`list[<RascalAlgebraicDataType inner>]`)
+	= "list[<genType(inner)>]";
+str genType((RascalAlgebraicDataType)`set[<RascalAlgebraicDataType inner>]`)
+	= "set[<genType(inner)>]";
+str genType((RascalAlgebraicDataType)`int`)
+	= "int";
+str genType((RascalAlgebraicDataType)`str`)
+	= "str";
+str genType((RascalAlgebraicDataType)`.`)
+	= "";
+default str genType(RascalAlgebraicDataType x)
+{
+	throw "Non-exhaustive pattern for <x>";
+}
+
+///////////////////////////////////////////////////////////////////

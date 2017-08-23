@@ -3,6 +3,9 @@ module Sample1
 
 import ParseTree;
 
-lexical ID = [A-Za-z]+ !>> [A-Za-z];
+lexical BOOLWord = [A-Za-z]+ !>> [A-Za-z];
 layout Lay = [\  \t \n];
-syntax Foo = ID+;
+
+syntax Foo = BOOLWord+;
+
+alias Foo = list[str];
