@@ -8,7 +8,7 @@ import Generator;
 
 void main()
 {
-	for(F <- ["Sample1"])
+	for(F <- ["Sample1", "Point"])
 	{
 		T = parse(#start[BOOL],|project://bool/code/<F>.bool|).top;
 		//iprintln(T);

@@ -1,25 +1,28 @@
 @contributor{Vadim Zaytsev - vadim@grammarware.net}
 module ConcreteSyntax
 
-lexical ID = [A-Za-z]+ !>> [A-Za-z];
+lexical UserId = [A-Z][a-z.]* !>> [a-z.];
+lexical NormalId = [a-z]+ !>> [a-z];
 layout L = [\ \t \r \n]* !>> [\ \t \r \n];
 
 start syntax BOOL = BoolBind*;
 
-syntax BoolBind = ID name ":=" BoolExpr left "~" BoolExpr right;
+syntax BoolBind = UserId name ":=" BoolExpr left "~" BoolExpr right;
 
 syntax BoolExpr
 	= MultiaryOp con "[" {BoolExpr ","}+ inners "]"
 	| UnaryOp con "[" BoolExpr inner "]"
-	| NullaryOp con ID? name
-	| ID result ":=" RascalExpr expr
+	| NullaryOp con NormalId? name
+	> UserId userdefined NormalId? name
+	| UserId "[" {BoolAssignment ","}+ inners "]"
 	;
 
-syntax MultiaryOp = "or" | "fun" | "seq";
+syntax MultiaryOp = "or" | "fun" | "seq" | "class";
 syntax UnaryOp = "list" | "set" | "plus" | "star";
 syntax NullaryOp
-	= "int" | "str" | "word"
-	| "space" | "tab" | "newline" | "comma"
+	= "space" | "tab" | "newline" | "comma"
+	| "int" | "str" | "word"
+	| "method"
 	| "." ;
-
-lexical RascalExpr = ![,\]] >> [,\]] ;
+syntax BoolAssignment = NormalId result ":=" RascalExpr expr;
+lexical RascalExpr = ![,\]]+ >> [,\]] ;

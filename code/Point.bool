@@ -1,0 +1,3 @@
+Layout := or[space, tab, newline] ~ .
+Point := seq[int x, comma, int y] ~ class[int x, int y, method add]
+Point.add := fun[Point one, Point two] ~ Point[x:=one.x+two.x, y:=one.y+two.y]
