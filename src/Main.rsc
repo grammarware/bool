@@ -15,7 +15,7 @@ void main()
 		str text = genHeader(F) + genStandard(T);
 		for(/BoolBind b := T)
 			text += genSD("<b.name>", b.left, b.right) + "\n";
-		for(/BoolBind b := T)
+		for(/BoolBind b := T, !contains("<b.name>", "."))
 			text += genADT("<b.name>", b.right) + "\n";
 		writeFile(|project://bool/src/examples/<F>.rsc|, text);
 	}

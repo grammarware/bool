@@ -1,8 +1,7 @@
 @contributor{Vadim Zaytsev - vadim@grammarware.net}
 module Generator
 
-import IO;
-import List;
+import Prelude;
 import ConcreteSyntax;
 
 str genHeader(str name)
@@ -63,17 +62,35 @@ default str genSyntaxSymbol(NullaryOp x)
 	= NonExhaustive("genSyntaxSymbol", "<x>");
 ///////////////////////////////////////////////////////////////////
 str genLex((BoolExpr)`or[<{BoolExpr ","}+ inners>]`)
-	= "[" + intercalate(" ", [genLex(inner) | BoolExpr inner <- inners]) + "]";
-str genLex((BoolExpr)`word`)
-	= "[A-Za-z]+ !\>\> [A-Za-z]";
-str genLex((BoolExpr)`space`)
-	= "\\ ";
-str genLex((BoolExpr)`tab`)
-	= "\\t";
-str genLex((BoolExpr)`newline`)
-	= "\\n";
+	= "[" + intercalate(" ", [unpack(genLex(inner)) | BoolExpr inner <- inners]) + "]";
+str genLex((BoolExpr)`<NullaryOp con>`)
+	= genLexSymbol(con);
+str genLex((BoolExpr)`<NullaryOp con><NormalId name>`)
+	= "<genLexSymbol(con)> <name>";
 default str genLex(BoolExpr x)
 	= NonExhaustive("genLex", "<x>");
+
+str unpack(str x)
+{
+	if (startsWith(x,"[") && endsWith(x,"]"))
+		return substring(x,1,size(x)-1);
+	else
+		return x;
+}
+
+///////////////////////////////////////////////////////////////////
+str genLexSymbol((NullaryOp)`space`) = "[\\ ]";
+str genLexSymbol((NullaryOp)`tab`) = "[\\t]";
+str genLexSymbol((NullaryOp)`newline`) = "[\\n]";
+str genLexSymbol((NullaryOp)`comma`) = "[,]";
+str genLexSymbol((NullaryOp)`int`) = "[0-9]+ !\>\> [0-9]";
+str genLexSymbol((NullaryOp)`str`) = "/*str*/";
+str genLexSymbol((NullaryOp)`word`) = "[A-Za-z]+ !\>\> [A-Za-z]";
+str genLexSymbol((NullaryOp)`method`) = "/*method*/";
+str genLexSymbol((NullaryOp)`.`) = " ";
+
+default str genLexSymbol(NullaryOp x)
+	= NonExhaustive("genLexSymbol", "<x>");
 
 ///////////////////////////////////////////////////////////////////
 str genADT(str name, (BoolExpr)`.`)
@@ -81,18 +98,27 @@ str genADT(str name, (BoolExpr)`.`)
 default str genADT(str name, BoolExpr def)
 	= "alias <name> = <genType(def)>;";
 
+str genType((BoolExpr)`class[<{BoolExpr ","}+ inners>]`)
+	= "tuple[" + intercalate(", ", [genType(inner) | BoolExpr inner <- inners]) + "]";
 str genType((BoolExpr)`list[<BoolExpr inner>]`)
 	= "list[<genType(inner)>]";
 str genType((BoolExpr)`set[<BoolExpr inner>]`)
 	= "set[<genType(inner)>]";
-str genType((BoolExpr)`int`)
-	= "int";
-str genType((BoolExpr)`str`)
-	= "str";
-str genType((BoolExpr)`.`)
-	= "";
+str genType((BoolExpr)`<NullaryOp con>`)
+	= genTypeSymbol(con);
+str genType((BoolExpr)`<NullaryOp con><NormalId name>`)
+	= "<genTypeSymbol(con)> <name>";
 default str genType(BoolExpr x)
 	= NonExhaustive("genType", "<x>");
+
+///////////////////////////////////////////////////////////////////
+str genTypeSymbol((NullaryOp)`int`) = "int";
+str genTypeSymbol((NullaryOp)`str`) = "str";
+str genTypeSymbol((NullaryOp)`method`) = "value/*method*/";
+str genTypeSymbol((NullaryOp)`.`) = " ";
+
+default str genTypeSymbol(NullaryOp x)
+	= NonExhaustive("genTypeSymbol", "<x>");
 
 ///////////////////////////////////////////////////////////////////
 
