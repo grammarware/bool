@@ -3,20 +3,20 @@ module Main
 
 import Prelude;
 import ParseTree;
-import domain::Support;
+import ConcreteSyntax;
 import Generator;
 
 void main()
 {
 	for(F <- ["Sample1"])
 	{
-		T = parseBool(|project://bool/code/<F>.bool|);
+		T = parse(#start[BOOL],|project://bool/code/<F>.bool|).top;
 		//iprintln(T);
 		str text = genHeader(F) + genStandard(T);
-		for(str name <- domain(T))
-			text += genSD(name, T[name][0], T[name][1]) + "\n";
-		for(str name <- domain(T))
-			text += genADT(name, T[name][1]) + "\n";
+		for(/BoolBind b := T)
+			text += genSD("<b.name>", b.left, b.right) + "\n";
+		for(/BoolBind b := T)
+			text += genADT("<b.name>", b.right) + "\n";
 		writeFile(|project://bool/src/examples/<F>.rsc|, text);
 	}
 	

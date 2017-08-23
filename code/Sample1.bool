@@ -1,4 +1,2 @@
-bind RascalSD ~ RascalADT
-
 Lay := or[space, tab, newline] ~ .
 Foo := plus[word] ~ list[str]

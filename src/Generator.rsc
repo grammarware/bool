@@ -2,10 +2,11 @@
 module Generator
 
 import List;
-import domain::Syntax;
-import domain::SyntaxBase;
-import domain::rsd::Syntax;
-import domain::radt::Syntax;
+import ConcreteSyntax;
+//import domain::Syntax;
+//import domain::SyntaxBase;
+//import domain::rsd::Syntax;
+//import domain::radt::Syntax;
 
 str genHeader(str name)
   = "@contributor{BOOL}
@@ -16,68 +17,68 @@ str genHeader(str name)
 	'";
 
 ///////////////////////////////////////////////////////////////////
-str genStandard(Bindings bs)
+str genStandard(BOOL bs)
 {
 	str result = "";
-	if (/(RSDSimpleType)`word` := bs)
-		result += "lexical BOOLWord = [A-Za-z]+ !\>\> [A-Za-z];\n";
+	if (/(BoolExpr)`word` := bs)
+		result += "lexical BoolWord = [A-Za-z]+ !\>\> [A-Za-z];\n";
 	return result;
 }
 
 ///////////////////////////////////////////////////////////////////
-str genSD(str name, RascalSyntaxDef left, RascalAlgebraicDataType right)
+str genSD(str name, BoolExpr left, BoolExpr right)
 {
-	if ((RascalAlgebraicDataType)`.` := right)
+	if ((BoolExpr)`.` := right)
 		return "layout <name> = <genLex(left)>;\n";
 	return "syntax <name> = <genSyntax(left)>;";
 }
 
 ///////////////////////////////////////////////////////////////////
-str genSyntax((RascalSyntaxDef)`star[<RascalSyntaxDef inner>]`)
+str genSyntax((BoolExpr)`star[<BoolExpr inner>]`)
 	= "<genSyntax(inner)>*";
-str genSyntax((RascalSyntaxDef)`plus[<RascalSyntaxDef inner>]`)
+str genSyntax((BoolExpr)`plus[<BoolExpr inner>]`)
 	= "<genSyntax(inner)>+";
-str genSyntax((RascalSyntaxDef)`or[<{RascalSyntaxDef ","}+ inners>]`)
-	= intercalate(" | ", [genSyntax(inner) | RascalSyntaxDef inner <- inners]);
-str genSyntax((RascalSyntaxDef)`word`)
-	= "BOOLWord";
-default str genSyntax(RascalSyntaxDef x)
+str genSyntax((BoolExpr)`or[<{BoolExpr ","}+ inners>]`)
+	= intercalate(" | ", [genSyntax(inner) | BoolExpr inner <- inners]);
+str genSyntax((BoolExpr)`word`)
+	= "BoolWord";
+default str genSyntax(BoolExpr x)
 {
 	throw "Non-exhaustive pattern for <x>";
 }
 
 ///////////////////////////////////////////////////////////////////
-str genLex((RascalSyntaxDef)`or[<{RascalSyntaxDef ","}+ inners>]`)
-	= "[" + intercalate(" ", [genLex(inner) | RascalSyntaxDef inner <- inners]) + "]";
-str genLex((RascalSyntaxDef)`word`)
+str genLex((BoolExpr)`or[<{BoolExpr ","}+ inners>]`)
+	= "[" + intercalate(" ", [genLex(inner) | BoolExpr inner <- inners]) + "]";
+str genLex((BoolExpr)`word`)
 	= "[A-Za-z]+ !\>\> [A-Za-z]";
-str genLex((RascalSyntaxDef)`space`)
+str genLex((BoolExpr)`space`)
 	= "\\ ";
-str genLex((RascalSyntaxDef)`tab`)
+str genLex((BoolExpr)`tab`)
 	= "\\t";
-str genLex((RascalSyntaxDef)`newline`)
+str genLex((BoolExpr)`newline`)
 	= "\\n";
-default str genLex(RascalSyntaxDef x)
+default str genLex(BoolExpr x)
 {
 	throw "Non-exhaustive pattern for <x>";
 }
 ///////////////////////////////////////////////////////////////////
-str genADT(str name, (RascalAlgebraicDataType)`.`)
+str genADT(str name, (BoolExpr)`.`)
 	= "";
-default str genADT(str name, RascalAlgebraicDataType def)
+default str genADT(str name, BoolExpr def)
 	= "alias <name> = <genType(def)>;";
 
-str genType((RascalAlgebraicDataType)`list[<RascalAlgebraicDataType inner>]`)
+str genType((BoolExpr)`list[<BoolExpr inner>]`)
 	= "list[<genType(inner)>]";
-str genType((RascalAlgebraicDataType)`set[<RascalAlgebraicDataType inner>]`)
+str genType((BoolExpr)`set[<BoolExpr inner>]`)
 	= "set[<genType(inner)>]";
-str genType((RascalAlgebraicDataType)`int`)
+str genType((BoolExpr)`int`)
 	= "int";
-str genType((RascalAlgebraicDataType)`str`)
+str genType((BoolExpr)`str`)
 	= "str";
-str genType((RascalAlgebraicDataType)`.`)
+str genType((BoolExpr)`.`)
 	= "";
-default str genType(RascalAlgebraicDataType x)
+default str genType(BoolExpr x)
 {
 	throw "Non-exhaustive pattern for <x>";
 }
