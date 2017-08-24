@@ -13,8 +13,8 @@ syntax BoolExpr
 	= MultiaryOp con "[" {BoolExpr ","}+ inners "]"
 	| UnaryOp con "[" BoolExpr inner "]"
 	| NullaryOp con NormalId? name
-	> UserId userdefined NormalId? name
-	| UserId "[" {BoolAssignment ","}+ inners "]"
+	> UserId con NormalId? name
+	| UserId con "[" {BoolAssignment ","}+ inners "]"
 	;
 
 syntax MultiaryOp = "or" | "fun" | "seq" | "class";

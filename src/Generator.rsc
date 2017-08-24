@@ -28,7 +28,7 @@ str genSD(str name, BoolExpr left, BoolExpr right)
 {
 	if ((BoolExpr)`.` := right)
 		return "layout <name> = <genLex(left)>;\n";
-	return "syntax <name> = <genSyntax(left)>;";
+	return "syntax C<name> = <genSyntax(left)>;";
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -96,7 +96,7 @@ default str genLexSymbol(NullaryOp x)
 str genADT(str name, (BoolExpr)`.`)
 	= "";
 default str genADT(str name, BoolExpr def)
-	= "alias <name> = <genType(def)>;";
+	= "alias A<name> = <genType(def)>;";
 
 str genType((BoolExpr)`class[<{BoolExpr ","}+ inners>]`)
 	= "tuple[" + intercalate(", ", [genType(inner) | BoolExpr inner <- inners]) + "]";
@@ -108,6 +108,10 @@ str genType((BoolExpr)`<NullaryOp con>`)
 	= genTypeSymbol(con);
 str genType((BoolExpr)`<NullaryOp con><NormalId name>`)
 	= "<genTypeSymbol(con)> <name>";
+str genType((BoolExpr)`<UserId con>`)
+	= "<con>";
+str genType((BoolExpr)`<UserId con><NormalId name>`)
+	= "<con> <name>";
 default str genType(BoolExpr x)
 	= NonExhaustive("genType", "<x>");
 
@@ -121,9 +125,24 @@ default str genTypeSymbol(NullaryOp x)
 	= NonExhaustive("genTypeSymbol", "<x>");
 
 ///////////////////////////////////////////////////////////////////
-
 private str NonExhaustive(str f, str x)
 {
 	println("Non-exhaustive pattern in <f> for <x>");
 	return "/*<x>*/";
+}
+
+///////////////////////////////////////////////////////////////////
+str genMethods(BoolBind b)
+{
+	str result = "";
+	pair = split(".", "<b.name>");
+	//iprintln(b.right.con);
+	str pars = "";
+	
+	
+	result += "A<b.right.con> <pair[1]><pair[0]>(<intercalate(", ", [genType(x) | BoolExpr x <- b.left.inners])>)
+			  '{
+			  '	return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);
+			  '}";
+	return result;
 }

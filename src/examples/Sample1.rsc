@@ -6,6 +6,6 @@ import ParseTree;
 lexical BoolWord = [A-Za-z]+ !>> [A-Za-z];
 layout Lay = [\  \t \n];
 
-syntax Foo = BoolWord+;
+syntax CFoo = BoolWord+;
 
-alias Foo = list[str];
+alias AFoo = list[str];
