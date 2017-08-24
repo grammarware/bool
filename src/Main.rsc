@@ -3,8 +3,8 @@ module Main
 
 import Prelude;
 import ParseTree;
-import ConcreteSyntax;
-import Generator;
+import internal::ConcreteSyntax;
+import internal::Generator;
 
 void main()
 {
@@ -37,7 +37,7 @@ void main()
 					'\>;
 					'";
 		// Serialise into the file
-		writeFile(|project://bool/src/examples/<F>.rsc|, text);
+		writeFile(|project://bool/src/<F>.rsc|, text);
 	}
 	
 }

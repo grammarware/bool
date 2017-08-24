@@ -1,8 +1,8 @@
 @contributor{Vadim Zaytsev - vadim@grammarware.net}
-module Generator
+module internal::Generator
 
 import Prelude;
-import ConcreteSyntax;
+import internal::ConcreteSyntax;
 
 str genHeader(str name)
   = "@contributor{BOOL}

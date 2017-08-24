@@ -1,5 +1,5 @@
 @contributor{Vadim Zaytsev - vadim@grammarware.net}
-module ConcreteSyntax
+module internal::ConcreteSyntax
 
 lexical UserId = [A-Z][a-z.]* !>> [a-z.];
 lexical NormalId = [a-z]+ !>> [a-z];
