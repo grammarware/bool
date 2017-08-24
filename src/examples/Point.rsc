@@ -8,8 +8,8 @@ layout Layout = [\  \t \n];
 
 syntax CPoint = BoolInt x "," BoolInt y;
 
-alias APoint = tuple[int x, int y, value/*method*/ add];
-APoint addPoint(Point l, Point r)
-{
-	return newPoint(l.x+r.x, l.y+r.y);
-}
+alias APoint = tuple[int x, int y, APoint(APoint) add];
+
+APoint addPoint(APoint l, APoint r)
+	 = newPoint(l.x+r.x, l.y+r.y);
+

@@ -93,26 +93,31 @@ default str genLexSymbol(NullaryOp x)
 	= NonExhaustive("genLexSymbol", "<x>");
 
 ///////////////////////////////////////////////////////////////////
-str genADT(str name, (BoolExpr)`.`)
+str genADT(str name, (BoolExpr)`.`, map[str,list[str]] methods)
 	= "";
-default str genADT(str name, BoolExpr def)
-	= "alias A<name> = <genType(def)>;";
+default str genADT(str name, BoolExpr def, map[str,list[str]] methods)
+	= "alias A<name> = <genType(def, methods, "<name>")>;";
 
-str genType((BoolExpr)`class[<{BoolExpr ","}+ inners>]`)
-	= "tuple[" + intercalate(", ", [genType(inner) | BoolExpr inner <- inners]) + "]";
-str genType((BoolExpr)`list[<BoolExpr inner>]`)
-	= "list[<genType(inner)>]";
-str genType((BoolExpr)`set[<BoolExpr inner>]`)
-	= "set[<genType(inner)>]";
-str genType((BoolExpr)`<NullaryOp con>`)
+str genType((BoolExpr)`class[<{BoolExpr ","}+ inners>]`, map[str,list[str]] methods, str super)
+	= "tuple[" + intercalate(", ", [genType(inner, methods, super) | BoolExpr inner <- inners]) + "]";
+str genType((BoolExpr)`list[<BoolExpr inner>]`, map[str,list[str]] methods, str super)
+	= "list[<genType(inner, methods, super)>]";
+str genType((BoolExpr)`set[<BoolExpr inner>]`, map[str,list[str]] methods, str super)
+	= "set[<genType(inner, methods, super)>]";
+str genType((BoolExpr)`<NullaryOp con>`, map[str,list[str]] _, str super)
 	= genTypeSymbol(con);
-str genType((BoolExpr)`<NullaryOp con><NormalId name>`)
+str genType((BoolExpr)`method <NormalId name>`, map[str,list[str]] methods, str super)
+{
+	list[str] args = methods["<super>.<name>"];
+	return "A<args[0]>(A<intercalate(", A", args[1..])>) <name>";
+}
+str genType((BoolExpr)`<NullaryOp con><NormalId name>`, map[str,list[str]] _, str super)
 	= "<genTypeSymbol(con)> <name>";
-str genType((BoolExpr)`<UserId con>`)
+str genType((BoolExpr)`<UserId con>`, _, _)
 	= "<con>";
-str genType((BoolExpr)`<UserId con><NormalId name>`)
+str genType((BoolExpr)`<UserId con><NormalId name>`, _, _)
 	= "<con> <name>";
-default str genType(BoolExpr x)
+default str genType(BoolExpr x, _, _)
 	= NonExhaustive("genType", "<x>");
 
 ///////////////////////////////////////////////////////////////////
@@ -140,9 +145,8 @@ str genMethods(BoolBind b)
 	str pars = "";
 	
 	
-	result += "A<b.right.con> <pair[1]><pair[0]>(<intercalate(", ", [genType(x) | BoolExpr x <- b.left.inners])>)
-			  '{
-			  '	return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);
-			  '}";
+	result += "A<b.right.con> <pair[1]><pair[0]>(A<intercalate(", A", [genType(x,(),"<b.right.con>") | BoolExpr x <- b.left.inners])>)
+			  '	 = new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);
+			  '";
 	return result;
 }
