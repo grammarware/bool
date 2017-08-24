@@ -8,6 +8,7 @@ str genHeader(str name)
   = "@contributor{BOOL}
 	'module <name>
 	'
+	'import IO;
 	'import ParseTree;
 	'
 	'";
@@ -44,6 +45,10 @@ str genSyntax((BoolExpr)`<NullaryOp con>`)
 	= genSyntaxSymbol(con);
 str genSyntax((BoolExpr)`<NullaryOp con><NormalId name>`)
 	= "<genSyntaxSymbol(con)> <name>";
+str genSyntax((BoolExpr)`<UserId con>`)
+	= "C<con>";
+str genSyntax((BoolExpr)`<UserId con><NormalId name>`)
+	= "C<con> <name>";
 default str genSyntax(BoolExpr x)
 	= NonExhaustive("genSyntax", "<x>");
 
@@ -52,6 +57,7 @@ str genSyntaxSymbol((NullaryOp)`space`) = "\" \"";
 str genSyntaxSymbol((NullaryOp)`tab`) = "\"\\t\"";
 str genSyntaxSymbol((NullaryOp)`newline`) = "\"\\n\"";
 str genSyntaxSymbol((NullaryOp)`comma`) = "\",\"";
+str genSyntaxSymbol((NullaryOp)`colon`) = "\":\"";
 str genSyntaxSymbol((NullaryOp)`int`) = "BoolInt";
 str genSyntaxSymbol((NullaryOp)`str`) = "BoolStr";
 str genSyntaxSymbol((NullaryOp)`word`) = "BoolWord";
@@ -83,6 +89,7 @@ str genLexSymbol((NullaryOp)`space`) = "[\\ ]";
 str genLexSymbol((NullaryOp)`tab`) = "[\\t]";
 str genLexSymbol((NullaryOp)`newline`) = "[\\n]";
 str genLexSymbol((NullaryOp)`comma`) = "[,]";
+str genLexSymbol((NullaryOp)`colon`) = "[:]";
 str genLexSymbol((NullaryOp)`int`) = "[0-9]+ !\>\> [0-9]";
 str genLexSymbol((NullaryOp)`str`) = "/*str*/";
 str genLexSymbol((NullaryOp)`word`) = "[A-Za-z]+ !\>\> [A-Za-z]";
@@ -106,14 +113,10 @@ default str genADT(str name, BoolExpr def, map[str,list[str]] methods)
 			else
 				fields += x;
 		return
-			"alias A<name> = tuple[<intercalate(", ", [genType(f, methods, name) | BoolExpr f <- fields])>];
+			"alias A<name> = tuple[<intercalate(", ", [ToName(genType(f, methods, name)) | BoolExpr f <- fields])>];
 			'alias I<name> = tuple[<intercalate(", ", [genType(f, methods, name) | BoolExpr f <- functs])>];
 			'
 	  		'<genConstructor(def, methods, name)>";
-	 		//return "alias A<name> = <genType(def, methods, "<name>")>;
-	 // 'alias I<name> = <genType(def, methods, "<name>")>;
-	 // '
-	 // '<genConstructor(def, methods, "<name>")>";
 	}
 	else
 		return "alias A<name> = <genType(def, methods, "<name>")>;";
@@ -122,7 +125,7 @@ default str genADT(str name, BoolExpr def, map[str,list[str]] methods)
 str genConstructor((BoolExpr)`class[<{BoolExpr ","}+ inners>]`, map[str,list[str]] methods, str super)
 {
 	list[BoolExpr] fields = [inner | BoolExpr inner <- inners, (BoolExpr)`method <NormalId _>` !:= inner];
-	return  "A<super> new<super>(<intercalate(", ", [genType(field, methods, super) | field <- fields])>)
+	return  "A<super> new<super>(<intercalate(", ", [ToName(genType(field, methods, super)) | field <- fields])>)
 	  		'	= \< <intercalate(", ", ["<f.name>" | f <- fields])> \>;"; 
 }
 
@@ -142,7 +145,7 @@ str genType((BoolExpr)`<NullaryOp con>`, map[str,list[str]] _, str super)
 str genType((BoolExpr)`method <NormalId name>`, map[str,list[str]] methods, str super)
 {
 	list[str] args = methods["<super>.<name>"];
-	return "A<args[0]>(A<intercalate(", A", args[1..])>) <name>";
+	return "<ToName(args[0])>(<intercalate(", ", [ToName(a) | a <- args[1..]])>) <name>";
 }
 str genType((BoolExpr)`<NullaryOp con><NormalId name>`, map[str,list[str]] _, str super)
 	= "<genTypeSymbol(con)> <name>";
@@ -163,12 +166,23 @@ default str genTypeSymbol(NullaryOp x)
 	= NonExhaustive("genTypeSymbol", "<x>");
 
 ///////////////////////////////////////////////////////////////////
+str genMethods(BoolBind b)
+	= "A<b.right.con> (<intercalate(", ", [ToName(genType(x,(),"<b.right.con>")) | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
+
+///////////////////////////////////////////////////////////////////
 private str NonExhaustive(str f, str x)
 {
 	println("Non-exhaustive pattern in <f> for <x>");
 	return "/*<x>*/";
 }
 
-///////////////////////////////////////////////////////////////////
-str genMethods(BoolBind b)
-	= "A<b.right.con> (A<intercalate(", A", [genType(x,(),"<b.right.con>") | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
+//private str ToName("int") = "int";
+//private str ToName("str") = "str";
+//private str ToName("bool") = "bool";
+private str ToName(str a)
+{
+	for (t <- ["int", "str", "bool"])
+		if (startsWith(a, t))
+			return a;
+	return "A<a>";
+}

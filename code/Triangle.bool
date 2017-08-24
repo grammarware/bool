@@ -1,0 +1,5 @@
+Layout           := or[space, tab, newline] ~ .
+Point            := seq[int x, comma, int y] ~ class[int x, int y, method add]
+Point.add        := fun[Point l, Point r] ~ Point[x:=l.x+r.x; y:=l.y+r.y]
+Rectangle        := seq[Point tl, colon, Point br] ~ class[Point tl, Point br, method square]
+Rectangle.square := fun[Point tl, int side] ~ Rectangle[tl:=tl; br:=newPoint(tl.x+side,tl.y+side)]

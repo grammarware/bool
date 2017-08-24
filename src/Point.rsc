@@ -1,6 +1,7 @@
 @contributor{BOOL}
 module Point
 
+import IO;
 import ParseTree;
 
 lexical BoolInt = [0-9]+ !>> [0-9];

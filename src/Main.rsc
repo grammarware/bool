@@ -8,7 +8,7 @@ import internal::Generator;
 
 void main()
 {
-	for(F <- ["Sample1", "Point"])
+	for(F <- ["Sample1", "Point", "Triangle"])
 	{
 		T = parse(#start[BOOL],|project://bool/code/<F>.bool|).top;
 		// Generate Rascal header

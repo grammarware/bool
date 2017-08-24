@@ -14,15 +14,15 @@ syntax BoolExpr
 	| UnaryOp con "[" BoolExpr inner "]"
 	| NullaryOp con NormalId? name
 	> UserId con NormalId? name
-	| UserId con "[" {BoolAssignment ","}+ inners "]"
+	| UserId con "[" {BoolAssignment ";"}+ inners "]"
 	;
 
 syntax MultiaryOp = "or" | "fun" | "seq" | "class";
 syntax UnaryOp = "list" | "set" | "plus" | "star";
 syntax NullaryOp
-	= "space" | "tab" | "newline" | "comma"
+	= "space" | "tab" | "newline" | "comma" | "colon"
 	| "int" | "str" | "word"
 	| "method"
 	| "." ;
 syntax BoolAssignment = NormalId result ":=" RascalExpr expr;
-lexical RascalExpr = ![,\]]+ >> [,\]] ;
+lexical RascalExpr = ![;\]]+ >> [;\]] ;
