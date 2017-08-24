@@ -20,15 +20,22 @@ void main()
 			text += genSD("<b.name>", b.left, b.right) + "\n";
 		// Collect methods' signatures
 		map[str,list[str]] methods = ();
+		list[str] classes = ["<name>" | /(BoolBind)`<UserId name>:= <BoolExpr _> ~ class[<{BoolExpr ","}+ _>]` := T];
 		for(/BoolBind b := T,
 			(BoolExpr)`fun[<{BoolExpr ","}+ inners>]` := b.left)
-		methods["<b.name>"] = ["<inner.con>" | BoolExpr inner <- inners];
+			methods["<b.name>"]
+				= ["<b.right.con>"]
+				+ ["<inner.con>" | BoolExpr inner <- inners];
 		// Add the abstract syntax part
 		for(/BoolBind b := T, !contains("<b.name>", "."))
 			text += genADT("<b.name>", b.right, methods) + "\n";
-		// Add methods
-		for(/BoolBind b := T, contains("<b.name>", "."))
-			text += "\n" + genMethods(b) + "\n";
+		// Compose clusters of methods
+		for(str c <- classes)
+			text += "
+					'I<c> <c> = \<
+					'	<intercalate(",\n", [genMethods(b) | /BoolBind b := T, startsWith("<b.name>", c+".")])>
+					'\>;
+					'";
 		// Serialise into the file
 		writeFile(|project://bool/src/examples/<F>.rsc|, text);
 	}

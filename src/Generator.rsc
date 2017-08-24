@@ -93,46 +93,43 @@ default str genLexSymbol(NullaryOp x)
 	= NonExhaustive("genLexSymbol", "<x>");
 
 ///////////////////////////////////////////////////////////////////
-str genADT(str name, (BoolExpr)`.`, map[str,list[str]] methods)
+str genADT(str _, (BoolExpr)`.`, map[str,list[str]] methods)
 	= "";
 default str genADT(str name, BoolExpr def, map[str,list[str]] methods)
-	= "alias A<name> = <genType(def, methods, "<name>")>;
-	  '<genConstructor(def, methods, "<name>")>";
+{
+	if ("<def.con>" == "class")
+	{
+		list[BoolExpr] fields = [], functs = [];
+		for (BoolExpr x <- def.inners)
+			if ("<x.con>" == "method")
+				functs += x;
+			else
+				fields += x;
+		return
+			"alias A<name> = tuple[<intercalate(", ", [genType(f, methods, name) | BoolExpr f <- fields])>];
+			'alias I<name> = tuple[<intercalate(", ", [genType(f, methods, name) | BoolExpr f <- functs])>];
+			'
+	  		'<genConstructor(def, methods, name)>";
+	 		//return "alias A<name> = <genType(def, methods, "<name>")>;
+	 // 'alias I<name> = <genType(def, methods, "<name>")>;
+	 // '
+	 // '<genConstructor(def, methods, "<name>")>";
+	}
+	else
+		return "alias A<name> = <genType(def, methods, "<name>")>;";
+}
 
 str genConstructor((BoolExpr)`class[<{BoolExpr ","}+ inners>]`, map[str,list[str]] methods, str super)
 {
 	list[BoolExpr] fields = [inner | BoolExpr inner <- inners, (BoolExpr)`method <NormalId _>` !:= inner];
-	list[BoolExpr] functs = [inner | BoolExpr inner <- inners, (BoolExpr)`method <NormalId _>` := inner];
-	list[str] args;
-	//return "A<args[0]>(A<intercalate(", A", args[1..])>) <name>";
-	str res = "A<super> new<super>(<intercalate(", ", [genType(field, methods, super) | field <- fields])>)
-	  '{
-	  '	A<super> res;
-	  '";
-	for (f <- fields)
-		res += "	res.<f.name> = <f.name>;
-		'";
-	for (f <- functs)
-	{
-		args = methods["<super>.<f.name>"];
-		int i = 1;
-		res += "	res.<f.name> = A<args[0]>(";
-		list[str] pars = [];
-		while (i < size(args))
-		{
-			pars += "A<args[i]> a<i>";
-			i += 1;
-		}
-		res += intercalate(", ", pars);
-		res += ") { return <f.name>(res, <intercalate(", ", ["a<j>" | int j <- [1..i]])>);};
-		'";
-	}
-	return res + "	return res;
-	'}";
+	return  "A<super> new<super>(<intercalate(", ", [genType(field, methods, super) | field <- fields])>)
+	  		'	= \< <intercalate(", ", ["<f.name>" | f <- fields])> \>;"; 
 }
 
 default str genConstructor(BoolExpr e, map[str,list[str]] methods, str super)
 	= "// <e>";
+
+///////////////////////////////////////////////////////////////////
 
 str genType((BoolExpr)`class[<{BoolExpr ","}+ inners>]`, map[str,list[str]] methods, str super)
 	= "tuple[" + intercalate(", ", [genType(inner, methods, super) | BoolExpr inner <- inners]) + "]";
@@ -174,15 +171,4 @@ private str NonExhaustive(str f, str x)
 
 ///////////////////////////////////////////////////////////////////
 str genMethods(BoolBind b)
-{
-	str result = "";
-	pair = split(".", "<b.name>");
-	//iprintln(b.right.con);
-	str pars = "";
-	
-	
-	result += "A<b.right.con> <pair[1]><pair[0]>(A<intercalate(", A", [genType(x,(),"<b.right.con>") | BoolExpr x <- b.left.inners])>)
-			  '	 = new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);
-			  '";
-	return result;
-}
+	= "A<b.right.con> (A<intercalate(", A", [genType(x,(),"<b.right.con>") | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
