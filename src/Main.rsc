@@ -23,7 +23,6 @@ void main()
 		for(/BoolBind b := T,
 			(BoolExpr)`fun[<{BoolExpr ","}+ inners>]` := b.left)
 		methods["<b.name>"] = ["<inner.con>" | BoolExpr inner <- inners];
-		println(methods);
 		// Add the abstract syntax part
 		for(/BoolBind b := T, !contains("<b.name>", "."))
 			text += genADT("<b.name>", b.right, methods) + "\n";

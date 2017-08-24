@@ -9,3 +9,4 @@ layout Lay = [\  \t \n];
 syntax CFoo = BoolWord+;
 
 alias AFoo = list[str];
+// list[str]
