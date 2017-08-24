@@ -8,8 +8,7 @@ str genHeader(str name)
   = "@contributor{BOOL}
 	'module <name>
 	'
-	'import IO;
-	'import ParseTree;
+	'import Prelude;
 	'
 	'";
 
@@ -28,7 +27,7 @@ str genStandard(BOOL bs)
 str genSD(str name, BoolExpr left, BoolExpr right)
 {
 	if ((BoolExpr)`.` := right)
-		return "layout <name> = <genLex(left)>;\n";
+		return "layout <name> = <genLex(left)>* !\>\> <genLex(left)>;\n";
 	return "syntax C<name> = <genSyntax(left)>;";
 }
 
@@ -170,15 +169,31 @@ str genMethods(BoolBind b)
 	= "A<b.right.con> (<intercalate(", ", [ToName(genType(x,(),"<b.right.con>")) | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
 
 ///////////////////////////////////////////////////////////////////
+str genImplosion(str class, BoolBind b)
+{
+	list[str] inits = [];
+	if ("<b.right.con>" != "class")
+		return "// ERROR: <b>";
+	for (f <- b.right.inners, "<f.con>" != "method")
+		switch("<f.con>")
+		{
+			case "str":
+				inits += "\"\<T.<f.name>\>\"";
+			case "int":
+				inits += "toInt(\"\<T.<f.name>\>\")";
+			default:
+				inits += "implode<f.con>(T.<f.name>)";
+		}
+	return "\< <intercalate(", ", inits)> \>";
+}
+
+///////////////////////////////////////////////////////////////////
 private str NonExhaustive(str f, str x)
 {
 	println("Non-exhaustive pattern in <f> for <x>");
 	return "/*<x>*/";
 }
 
-//private str ToName("int") = "int";
-//private str ToName("str") = "str";
-//private str ToName("bool") = "bool";
 private str ToName(str a)
 {
 	for (t <- ["int", "str", "bool"])

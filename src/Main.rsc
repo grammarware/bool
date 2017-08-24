@@ -29,6 +29,14 @@ void main()
 		// Add the abstract syntax part
 		for(/BoolBind b := T, !contains("<b.name>", "."))
 			text += genADT("<b.name>", b.right, methods) + "\n";
+		// Concrete to abstract mapping
+		for(str c <- classes)
+			text += "
+					'A<c> implode<c>(C<c> T)
+					'	= <genImplosion("<c>", [b | /BoolBind b := T, "<b.name>" == c][0])>;
+					'A<c> implode<c>(str input) = implode<c>(parse(#C<c>, input));
+					'";
+		
 		// Compose clusters of methods
 		for(str c <- classes)
 			text += "

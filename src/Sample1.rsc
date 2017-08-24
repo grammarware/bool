@@ -1,11 +1,10 @@
 @contributor{BOOL}
 module Sample1
 
-import IO;
-import ParseTree;
+import Prelude;
 
 lexical BoolWord = [A-Za-z]+ !>> [A-Za-z];
-layout Lay = [\  \t \n];
+layout Lay = [\  \t \n]* !>> [\  \t \n];
 
 syntax CFoo = BoolWord+;
 
