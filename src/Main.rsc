@@ -8,7 +8,7 @@ import internal::Generator;
 
 void main()
 {
-	for(F <- ["Sample1", "Point", "Triangle"])
+	for(F <- ["Simple", "Point", "Rectangle"])
 	{
 		T = parse(#start[BOOL],|project://bool/code/<F>.bool|).top;
 		// Generate Rascal header
@@ -30,13 +30,15 @@ void main()
 		for(/BoolBind b := T, !contains("<b.name>", "."))
 			text += genADT("<b.name>", b.right, methods) + "\n";
 		// Concrete to abstract mapping
-		for(str c <- classes)
+		for(/BoolBind b := T, !contains("<b.name>", "."), (BoolExpr)`.` !:= b.right)
+		{
+			str c = "<b.name>";
 			text += "
 					'A<c> implode<c>(C<c> T)
-					'	= <genImplosion("<c>", [b | /BoolBind b := T, "<b.name>" == c][0])>;
+					'	= <genImplosion("<c>", b)>;
 					'A<c> implode<c>(str input) = implode<c>(parse(#C<c>, input));
 					'";
-		
+		}
 		// Compose clusters of methods
 		for(str c <- classes)
 			text += "

@@ -35,7 +35,7 @@ str genSD(str name, BoolExpr left, BoolExpr right)
 str genSyntax((BoolExpr)`star[<BoolExpr inner>]`)
 	= "<genSyntax(inner)>*";
 str genSyntax((BoolExpr)`plus[<BoolExpr inner>]`)
-	= "<genSyntax(inner)>+";
+	= "<genSyntax(inner)>+ <toLowerCase(genSyntax(inner))>";
 str genSyntax((BoolExpr)`or[<{BoolExpr ","}+ inners>]`)
 	= intercalate(" | ", [genSyntax(inner) | BoolExpr inner <- inners]);
 str genSyntax((BoolExpr)`seq[<{BoolExpr ","}+ inners>]`)
@@ -170,23 +170,36 @@ str genMethods(BoolBind b)
 
 ///////////////////////////////////////////////////////////////////
 str genImplosion(str class, BoolBind b)
+	= genImplodePair(b.left, b.right);
+
+str genImplodePair(BoolExpr bl, BoolExpr br)	
+	= genImplodeAny("<br.con>", bl, br);
+
+str genImplodeAny("list", BoolExpr bl, BoolExpr br)
 {
-	list[str] inits = [];
-	if ("<b.right.con>" != "class")
-		return "// ERROR: <b>";
-	for (f <- b.right.inners, "<f.con>" != "method")
-		switch("<f.con>")
-		{
-			case "str":
-				inits += "\"\<T.<f.name>\>\"";
-			case "int":
-				inits += "toInt(\"\<T.<f.name>\>\")";
-			default:
-				inits += "implode<f.con>(T.<f.name>)";
-		}
-	return "\< <intercalate(", ", inits)> \>";
+	if ("<bl.con>" in ["plus", "star"])
+		return "[ <replaceAll(genImplodePair(bl.inner, br.inner), "T.<Expr2Name(bl.inner,br.inner)>", "element")> | <genSyntax(bl.inner)> element \<- T.<Expr2Name(bl.inner,br.inner)>]";
+	return NonExhaustive("genImplodeAny", "<bl.con> to list");
 }
 
+str genImplodeAny("class", BoolExpr bl, BoolExpr br)
+{
+	// TODO: name-based matching, not position-based
+	list[BoolExpr]
+		lefts = [e | BoolExpr e <- bl.inners, "<e.con>" notin ["space", "tab", "newline", "comma", "colon"]],
+		rights = [e | BoolExpr e <- br.inners, "<e.con>" != "method"];
+	return "\< <intercalate(", ", [genImplodePair(lefts[i], rights[i]) | int i <- [0..size(lefts)]])> \>";
+}
+
+str genImplodeAny("str", BoolExpr l, BoolExpr r)
+	= "\"\<T.<Expr2Name(l,r)>\>\"";
+
+str genImplodeAny("int", BoolExpr l, BoolExpr r)
+	= "toInt(\"\<T.<Expr2Name(l,r)>\>\")";
+
+default str genImplodeAny(str con, BoolExpr left, BoolExpr right)
+	//= NonExhaustive("genImplode", con);
+	= "implode<right.con>(T.<Expr2Name(left,right)>)";
 ///////////////////////////////////////////////////////////////////
 private str NonExhaustive(str f, str x)
 {
@@ -201,3 +214,6 @@ private str ToName(str a)
 			return a;
 	return "A<a>";
 }
+
+private str Expr2Name(BoolExpr l, BoolExpr r)
+	= ("<r.name>" == "") ? toLowerCase(genSyntax(l)) : "<r.name>";

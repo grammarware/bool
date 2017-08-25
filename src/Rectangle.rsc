@@ -1,5 +1,5 @@
 @contributor{BOOL}
-module Triangle
+module Rectangle
 
 import Prelude;
 
