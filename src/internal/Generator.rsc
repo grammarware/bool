@@ -180,6 +180,9 @@ default str genTypeSymbol(NullaryOp x)
 str genMethods(BoolBind b)
 	= "A<b.right.con> (<intercalate(", ", [ToName(genType(x,(),"<b.right.con>")) | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
 
+str genSeparateMethod(BoolBind b)
+	= "A<b.right.con> <ReverseDot("<b.name>")> (<intercalate(", ", [ToName(genType(x,(),"<b.right.con>")) | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
+
 ///////////////////////////////////////////////////////////////////
 str genImplosion(str class, BoolBind b, BOOL allbinds)
 	= genImplodePair(b.left, b.right, allbinds);
@@ -257,3 +260,6 @@ private str Expr2Name(BoolExpr l, BoolExpr r)
 	catch NoSuchField:
 		return toLowerCase(genSyntax(l));
 }
+
+private str ReverseDot(str x)
+	= intercalate("", reverse(split(".", x)));

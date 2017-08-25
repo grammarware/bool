@@ -8,7 +8,7 @@ import internal::Generator;
 
 void main()
 {
-	for(F <- ["Simple", "Point", "Rectangle", "Pairs"])
+	for(F <- ["Simple", "Point", "Rectangle"])//, "Pairs"])
 	{
 		T = parse(#start[BOOL],|project://bool/code/<F>.bool|).top;
 		// Generate Rascal header
@@ -55,6 +55,10 @@ void main()
 		for(str c <- classes, /BoolBind b1 := T, startsWith("<b1.name>", c+"."))
 		{
 			if (c in processed) continue;
+			// Standalone methods
+			for (/BoolBind b := T, startsWith("<b.name>", c+"."))
+				text += "\n" + genSeparateMethod(b);
+			// legacy
 			text += "
 					'public I<c> <c> = \<
 					'	<intercalate(",\n", [genMethods(b) | /BoolBind b := T, startsWith("<b.name>", c+".")])>";
