@@ -1,5 +1,5 @@
 Layout      := or[space, tab, newline]  ~ .
-Pair        := seq[int x, comma, int y] ~ class[int x, int y]
+Pair        := seq[int x, comma, int y] ~ record[int x, int y]
 Point       := Pair                     ~ class[method add, method sub]
 Point.add   := fun[Pair l, Pair r]      ~ Pair[x:=l.x+r.x; y:=l.y+r.y]
 Point.sub   := fun[Pair l, Pair r]      ~ Pair[x:=l.x-r.x; y:=l.y-r.y]

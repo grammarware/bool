@@ -53,7 +53,7 @@ private str ConcreteToAbstract(BOOL T)
 		str c = "<b.name>";
 		text += "
 				'A<c> implode<c>(C<c> T)
-				'	= <genImplosion("<c>", b, T)>;
+				'	= <genImplosion(b, T)>;
 				'A<c> implode<c>(str input) = implode<c>(parse(#C<c>, input));
 				'";
 	}
@@ -208,11 +208,12 @@ default str genLexSymbol(NullaryOp x)
 	= NonExhaustive("genLexSymbol", "<x>");
 
 ///////////////////////////////////////////////////////////////////
-str genADT(str _, BoolExpr _, (BoolExpr)`.`, BOOL allbinds)
-	= "";
-default str genADT(str name, BoolExpr left, BoolExpr def, BOOL allbinds)
+str genADT(str name, BoolExpr left, BoolExpr def, BOOL allbinds)
 {
-	if ("<def.con>" == "class")
+	if ((BoolExpr)`.` := def)
+		return "";
+	// TODO should be different for classes
+	if ("<def.con>" == "record" || "<def.con>" == "class")
 	{
 		list[BoolExpr] fields = [], functs = [];
 		for (BoolExpr x <- def.inners)
@@ -236,24 +237,33 @@ default str genADT(str name, BoolExpr left, BoolExpr def, BOOL allbinds)
 			'<}>
 			'<if(!isEmpty(functs)){>alias I<name> = tuple[<intercalate(", ", [genType(f, name) | BoolExpr f <- functs])>];
 			'<}>
-	  		'<if(!isEmpty(fields)){><genConstructor(def, AllMethods, name)><}>";
+	  		'<if(!isEmpty(fields)){><genConstructor(def, name)><}>";
 	}
 	else
 		return "alias A<name> = <genType(def, "<name>")>;";
 }
 
-str genConstructor((BoolExpr)`class[<{BoolExpr ","}+ inners>]`, map[str,list[str]] methods, str super)
+str genConstructor((BoolExpr)`class[<{BoolExpr ","}+ inners>]`, str super)
+	= NewFromInners(super, inners);
+
+str genConstructor((BoolExpr)`record[<{BoolExpr ","}+ inners>]`, str super)
+	= NewFromInners(super, inners);
+	
+private str NewFromInners(str super, {BoolExpr ","}+ inners)
 {
 	list[BoolExpr] fields = [inner | BoolExpr inner <- inners, (BoolExpr)`method <NormalId _>` !:= inner];
 	return  "A<super> new<super>(<intercalate(", ", [ToName(genType(field, super)) | field <- fields])>)
 	  		'	= \< <intercalate(", ", ["<f.name>" | f <- fields])> \>;"; 
 }
 
-default str genConstructor(BoolExpr e, map[str,list[str]] methods, str super)
+default str genConstructor(BoolExpr e, str super)
 	= "// <e>";
 
 ///////////////////////////////////////////////////////////////////
 
+str genType((BoolExpr)`record[<{BoolExpr ","}+ inners>]`, str super)
+	= "tuple[" + intercalate(", ", [genType(inner, super) | BoolExpr inner <- inners]) + "]";
+// TODO: change class to an ADT!
 str genType((BoolExpr)`class[<{BoolExpr ","}+ inners>]`, str super)
 	= "tuple[" + intercalate(", ", [genType(inner, super) | BoolExpr inner <- inners]) + "]";
 str genType((BoolExpr)`list[<BoolExpr inner>]`, str super)
@@ -293,7 +303,7 @@ str genSeparateMethod(BoolBind b)
 	= "A<b.right.con> <ReverseDot("<b.name>")> (<intercalate(", ", [ToName(genType(x, "<b.right.con>")) | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
 
 ///////////////////////////////////////////////////////////////////
-str genImplosion(str class, BoolBind b, BOOL allbinds)
+str genImplosion(BoolBind b, BOOL allbinds)
 	= genImplodePair(b.left, b.right, allbinds);
 
 str genImplodePair(BoolExpr bl, BoolExpr br, BOOL allbinds)	
@@ -306,7 +316,11 @@ str genImplodeAny("list", BoolExpr bl, BoolExpr br, BOOL allbinds)
 	return NonExhaustive("genImplodeAny", "<bl.con> to list");
 }
 
+// TODO should be different for classes
 str genImplodeAny("class", BoolExpr bl, BoolExpr br, BOOL allbinds)
+	= genImplodeAny("record", bl, br, allbinds);
+
+str genImplodeAny("record", BoolExpr bl, BoolExpr br, BOOL allbinds)
 {
 	// TODO: name-based matching, not position-based
 	list[BoolExpr] lefts, rights;

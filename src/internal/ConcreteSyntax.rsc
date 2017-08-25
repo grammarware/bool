@@ -17,7 +17,9 @@ syntax BoolExpr
 	| UserId con "[" {BoolAssignment ";"}+ inners "]"
 	;
 
-syntax MultiaryOp = "or" | "fun" | "seq" | "class" | "cluster";
+syntax MultiaryOp
+	= "or" | "fun" | "seq"
+	| "class" | "cluster" | "record";
 syntax UnaryOp = "list" | "set" | "plus" | "star";
 syntax NullaryOp
 	= "space" | "tab" | "newline" | "comma" | "colon"
