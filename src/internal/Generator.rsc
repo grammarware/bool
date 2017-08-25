@@ -12,7 +12,8 @@ public void TransformBoolToRascal(str modname, loc infile, loc outfile)
 	T = parse(#start[BOOL], infile).top;
 	
 	// Remember all classes
-	AllClasses = ["<name>" | /(BoolBind)`<UserId name>:= <BoolExpr _> ~ class[<{BoolExpr ","}+ _>]` := T];
+	AllClasses  = ["<name>" | /(BoolBind)`<UserId name>:= <BoolExpr _> ~ class[<{BoolExpr ","}+ _>]` := T]
+				+ ["<name>" | /(BoolBind)`<UserId name>:= <BoolExpr _> ~ cluster[<{BoolExpr ","}+ _>]` := T];
 	// Collect methods' signatures
 	AllMethods = CollectMethodSignatures(T);
 	
@@ -82,7 +83,8 @@ private map[str,list[str]] CollectMethodSignatures(BOOL T)
 		(BoolExpr)`<UserId con>` := b.left,
 		/BoolBind b2 := T,
 		"<b2.name>" == "<con>",
-		(BoolExpr)`class[<{BoolExpr ","}+ inners>]` := b2.right,
+		((BoolExpr)`class[<{BoolExpr ","}+ inners>]` := b2.right
+		|| (BoolExpr)`cluster[<{BoolExpr ","}+ inners>]` := b2.right),
 		(BoolExpr)`method <NormalId name>` <- inners)
 			methods["<b.name>.<name>"] = methods["<con>.<name>"];
 	return methods;
@@ -218,7 +220,7 @@ str genADT(str name, BoolExpr left, BoolExpr def, BOOL allbinds)
 	if ((BoolExpr)`.` := def)
 		return "";
 	// TODO should be different for classes
-	if ("<def.con>" == "record" || "<def.con>" == "class")
+	if ("<def.con>" == "record" || "<def.con>" == "class" || "<def.con>" == "cluster")
 	{
 		list[BoolExpr] fields = [], functs = [];
 		for (BoolExpr x <- def.inners)
@@ -267,6 +269,8 @@ default str genConstructor(BoolExpr e, str super)
 ///////////////////////////////////////////////////////////////////
 
 str genType((BoolExpr)`record[<{BoolExpr ","}+ inners>]`, str super)
+	= "tuple[" + intercalate(", ", [genType(inner, super) | BoolExpr inner <- inners]) + "]";
+str genType((BoolExpr)`cluster[<{BoolExpr ","}+ inners>]`, str super)
 	= "tuple[" + intercalate(", ", [genType(inner, super) | BoolExpr inner <- inners]) + "]";
 // TODO: change class to an ADT!
 str genType((BoolExpr)`class[<{BoolExpr ","}+ inners>]`, str super)

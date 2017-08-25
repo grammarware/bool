@@ -1,7 +1,7 @@
 Layout      := or[space, tab, newline]  ~ .
 Pair        := seq[int x, comma, int y] ~ record[int x, int y]
-Point       := Pair                     ~ class[method add, method sub]
+Point       := Pair                     ~ cluster[method add, method sub]
 Point.add   := fun[Pair l, Pair r]      ~ Pair[x:=l.x+r.x; y:=l.y+r.y]
 Point.sub   := fun[Pair l, Pair r]      ~ Pair[x:=l.x-r.x; y:=l.y-r.y]
-Complex     := Point                    ~ class[method mul]
+Complex     := Point                    ~ cluster[method mul]
 Complex.mul := fun[Pair l, Pair r]      ~ Pair[x:=l.x*r.x-l.y*r.y; y:=l.y*r.x+l.x*r.y]
