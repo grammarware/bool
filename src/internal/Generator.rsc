@@ -99,9 +99,9 @@ default str genLexSymbol(NullaryOp x)
 	= NonExhaustive("genLexSymbol", "<x>");
 
 ///////////////////////////////////////////////////////////////////
-str genADT(str _, (BoolExpr)`.`, map[str,list[str]] methods)
+str genADT(str _, BoolExpr _, (BoolExpr)`.`, BOOL allbinds, map[str,list[str]] methods)
 	= "";
-default str genADT(str name, BoolExpr def, map[str,list[str]] methods)
+default str genADT(str name, BoolExpr left, BoolExpr def, BOOL allbinds, map[str,list[str]] methods)
 {
 	if ("<def.con>" == "class")
 	{
@@ -111,11 +111,23 @@ default str genADT(str name, BoolExpr def, map[str,list[str]] methods)
 				functs += x;
 			else
 				fields += x;
+		if ((BoolExpr)`<UserId con>` := left)
+		{
+			list[BoolBind] mybinds = [b | /BoolBind b := allbinds, "<b.name>"=="<con>"];
+			if (size(mybinds)!=1)
+				throw "<con> must be unique!";
+			for (BoolExpr x <- mybinds[0].right.inners)
+				if ("<x.con>" == "method")
+					functs += x;
+				//else
+				//	fields += x;
+		}
 		return
-			"alias A<name> = tuple[<intercalate(", ", [ToName(genType(f, methods, name)) | BoolExpr f <- fields])>];
-			'alias I<name> = tuple[<intercalate(", ", [genType(f, methods, name) | BoolExpr f <- functs])>];
-			'
-	  		'<genConstructor(def, methods, name)>";
+			"<if(!isEmpty(fields)){>alias A<name> = tuple[<intercalate(", ", [ToName(genType(f, methods, name)) | BoolExpr f <- fields])>];
+			'<}>
+			'<if(!isEmpty(functs)){>alias I<name> = tuple[<intercalate(", ", [genType(f, methods, name) | BoolExpr f <- functs])>];
+			'<}>
+	  		'<if(!isEmpty(fields)){><genConstructor(def, methods, name)><}>";
 	}
 	else
 		return "alias A<name> = <genType(def, methods, "<name>")>;";
@@ -169,35 +181,58 @@ str genMethods(BoolBind b)
 	= "A<b.right.con> (<intercalate(", ", [ToName(genType(x,(),"<b.right.con>")) | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
 
 ///////////////////////////////////////////////////////////////////
-str genImplosion(str class, BoolBind b)
-	= genImplodePair(b.left, b.right);
+str genImplosion(str class, BoolBind b, BOOL allbinds)
+	= genImplodePair(b.left, b.right, allbinds);
 
-str genImplodePair(BoolExpr bl, BoolExpr br)	
-	= genImplodeAny("<br.con>", bl, br);
+str genImplodePair(BoolExpr bl, BoolExpr br, BOOL allbinds)	
+	= genImplodeAny("<br.con>", bl, br, allbinds);
 
-str genImplodeAny("list", BoolExpr bl, BoolExpr br)
+str genImplodeAny("list", BoolExpr bl, BoolExpr br, BOOL allbinds)
 {
 	if ("<bl.con>" in ["plus", "star"])
-		return "[ <replaceAll(genImplodePair(bl.inner, br.inner), "T.<Expr2Name(bl.inner,br.inner)>", "element")> | <genSyntax(bl.inner)> element \<- T.<Expr2Name(bl.inner,br.inner)>]";
+		return "[ <replaceAll(genImplodePair(bl.inner, br.inner, allbinds), "T.<Expr2Name(bl.inner,br.inner)>", "element")> | <genSyntax(bl.inner)> element \<- T.<Expr2Name(bl.inner,br.inner)>]";
 	return NonExhaustive("genImplodeAny", "<bl.con> to list");
 }
 
-str genImplodeAny("class", BoolExpr bl, BoolExpr br)
+str genImplodeAny("class", BoolExpr bl, BoolExpr br, BOOL allbinds)
 {
 	// TODO: name-based matching, not position-based
-	list[BoolExpr]
-		lefts = [e | BoolExpr e <- bl.inners, "<e.con>" notin ["space", "tab", "newline", "comma", "colon"]],
+	list[BoolExpr] lefts, rights;
+	if ((BoolExpr)`<UserId con>` := bl)
+	{
+		list[BoolBind] nb = [b | /BoolBind b := allbinds, b.name == con];
+		if (size(nb)!=1)
+			throw "<con> must be unique!";
+		if ((BoolExpr)`<UserId con2>` := nb[0].left)
+		{
+			list[BoolBind] nb2 = [b | /BoolBind b := allbinds, b.name == con2];
+			if (size(nb2)!=1)
+				throw "<con2> must be unique!";
+			lefts = [e | BoolExpr e <- nb2[0].left.inners, "<e.con>" notin ["space", "tab", "newline", "comma", "colon"]];
+			rights = [e | BoolExpr e <- nb[0].right.inners, "<e.con>" != "method"]
+				   + [e | BoolExpr e <- nb2[0].right.inners, "<e.con>" != "method"];
+		}
+		else
+		{
+			lefts = [e | BoolExpr e <- nb[0].left.inners, "<e.con>" notin ["space", "tab", "newline", "comma", "colon"]];
+			rights = [e | BoolExpr e <- nb[0].right.inners, "<e.con>" != "method"];
+		}
+	}
+	else
+	{	
+		lefts = [e | BoolExpr e <- bl.inners, "<e.con>" notin ["space", "tab", "newline", "comma", "colon"]];
 		rights = [e | BoolExpr e <- br.inners, "<e.con>" != "method"];
-	return "\< <intercalate(", ", [genImplodePair(lefts[i], rights[i]) | int i <- [0..size(lefts)]])> \>";
+	}
+	return "\< <intercalate(", ", [genImplodePair(lefts[i], rights[i], allbinds) | int i <- [0..size(lefts)]])> \>";
 }
 
-str genImplodeAny("str", BoolExpr l, BoolExpr r)
+str genImplodeAny("str", BoolExpr l, BoolExpr r, BOOL allbinds)
 	= "\"\<T.<Expr2Name(l,r)>\>\"";
 
-str genImplodeAny("int", BoolExpr l, BoolExpr r)
+str genImplodeAny("int", BoolExpr l, BoolExpr r, BOOL allbinds)
 	= "toInt(\"\<T.<Expr2Name(l,r)>\>\")";
 
-default str genImplodeAny(str con, BoolExpr left, BoolExpr right)
+default str genImplodeAny(str con, BoolExpr left, BoolExpr right, BOOL allbinds)
 	//= NonExhaustive("genImplode", con);
 	= "implode<right.con>(T.<Expr2Name(left,right)>)";
 ///////////////////////////////////////////////////////////////////
@@ -216,4 +251,9 @@ private str ToName(str a)
 }
 
 private str Expr2Name(BoolExpr l, BoolExpr r)
-	= ("<r.name>" == "") ? toLowerCase(genSyntax(l)) : "<r.name>";
+{
+	try
+		return ("<r.name>" == "") ? toLowerCase(genSyntax(l)) : "<r.name>";
+	catch NoSuchField:
+		return toLowerCase(genSyntax(l));
+}
