@@ -18,9 +18,9 @@ APoint newPoint(int x, int y)
 APoint implodePoint(CPoint T)
 	= < toInt("<T.x>"), toInt("<T.y>") >;
 APoint implodePoint(str input) = implodePoint(parse(#CPoint, input));
-
 APoint addPoint (APoint l, APoint r) { return newPoint(l.x+r.x, l.y+r.y);}
 APoint subPoint (APoint l, APoint r) { return newPoint(l.x-r.x, l.y-r.y);}
+
 public IPoint Point = <
 	APoint (APoint l, APoint r) { return newPoint(l.x+r.x, l.y+r.y);},
 	APoint (APoint l, APoint r) { return newPoint(l.x-r.x, l.y-r.y);}

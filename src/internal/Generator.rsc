@@ -7,7 +7,64 @@ import internal::ConcreteSyntax;
 list[str] AllClasses = [];
 map[str,list[str]] AllMethods = ();
 
-map[str,list[str]] CollectMethodSignatures(BOOL T)
+public void TransformBoolToRascal(str modname, loc infile, loc outfile)
+{
+	T = parse(#start[BOOL], infile).top;
+	
+	// Remember all classes
+	AllClasses = ["<name>" | /(BoolBind)`<UserId name>:= <BoolExpr _> ~ class[<{BoolExpr ","}+ _>]` := T];
+	// Collect methods' signatures
+	AllMethods = CollectMethodSignatures(T);
+	
+	// Generate Rascal header
+	str text = Header(modname)
+	// Add "standard" library nonterminals
+			 + StandardDefinitions(T)
+	// Complete the concrete syntax part
+			 + SyntaxDefinitions(T)
+	// Add the abstract syntax part
+			 + AliasDefinitions(T)
+	// Concrete to abstract mapping
+			 + ConcreteToAbstract(T)
+	// Methods as separate functions
+			 + StandaloneMethods(T)
+	// Compose clusters of methods
+			 + MethodClusters(T);
+	// Serialise into the file
+	writeFile(outfile, text);
+}
+
+private str SyntaxDefinitions(BOOL T)
+	= intercalate("\n", [genSD("<b.name>", b.left, b.right) | /BoolBind b := T, !contains("<b.name>", ".")])
+	+ "\n";
+
+private str AliasDefinitions(BOOL T)
+	= intercalate("\n", [genADT("<b.name>", b.left, b.right, T) | /BoolBind b := T, !contains("<b.name>", ".")])
+	+ "\n";
+
+private str ConcreteToAbstract(BOOL T)
+{
+	str text = "";
+	for(/BoolBind b := T,
+		!contains("<b.name>", "."),
+		(BoolExpr)`.` !:= b.right,
+		(BoolExpr)`<UserId _>` !:= b.left)
+	{
+		str c = "<b.name>";
+		text += "
+				'A<c> implode<c>(C<c> T)
+				'	= <genImplosion("<c>", b, T)>;
+				'A<c> implode<c>(str input) = implode<c>(parse(#C<c>, input));
+				'";
+	}
+	return text;
+}
+
+private str StandaloneMethods(BOOL T)
+	= intercalate("\n", [genSeparateMethod(b) | str c <- AllClasses, /BoolBind b := T, startsWith("<b.name>", c+".")])
+	+ "\n";
+
+private map[str,list[str]] CollectMethodSignatures(BOOL T)
 {
 	map[str,list[str]] methods = ();
 	for(/BoolBind b := T,
@@ -26,46 +83,14 @@ map[str,list[str]] CollectMethodSignatures(BOOL T)
 	return methods;
 }
 
-public void TransformBoolToRascal(str modname, loc infile, loc outfile)
+private str MethodClusters(BOOL T)
 {
-	T = parse(#start[BOOL], infile).top;
-	
-	// Remember all classes
-	AllClasses = ["<name>" | /(BoolBind)`<UserId name>:= <BoolExpr _> ~ class[<{BoolExpr ","}+ _>]` := T];
-	// Collect methods' signatures
-	AllMethods = CollectMethodSignatures(T);
-	
-	// Generate Rascal header
-	str text = Header(modname)
-	// Add "standard" library nonterminals
-			 + StandardDefinitions(T)
-	// Complete the concrete syntax part
-			 + SyntaxDefinitions(T);
-	// Add the abstract syntax part
-	for(/BoolBind b := T, !contains("<b.name>", "."))
-		text += genADT("<b.name>", b.left, b.right, T) + "\n";
-	// Concrete to abstract mapping
-	for(/BoolBind b := T,
-		!contains("<b.name>", "."),
-		(BoolExpr)`.` !:= b.right,
-		(BoolExpr)`<UserId _>` !:= b.left)
-	{
-		str c = "<b.name>";
-		text += "
-				'A<c> implode<c>(C<c> T)
-				'	= <genImplosion("<c>", b, T)>;
-				'A<c> implode<c>(str input) = implode<c>(parse(#C<c>, input));
-				'";
-	}
-	// Compose clusters of methods
+	// NB: suboptimal code, needs rewriting
+	str text = "";
 	list[str] processed = [];
 	for(str c <- AllClasses, /BoolBind b1 := T, startsWith("<b1.name>", c+"."))
 	{
 		if (c in processed) continue;
-		// Standalone methods
-		for (/BoolBind b := T, startsWith("<b.name>", c+"."))
-			text += "\n" + genSeparateMethod(b);
-		// legacy
 		text += "
 				'public I<c> <c> = \<
 				'	<intercalate(",\n", [genMethods(b) | /BoolBind b := T, startsWith("<b.name>", c+".")])>";
@@ -84,13 +109,8 @@ public void TransformBoolToRascal(str modname, loc infile, loc outfile)
 				'";
 		processed += c;
 	}
-	// Serialise into the file
-	writeFile(outfile, text);
+	return text;
 }
-
-private str SyntaxDefinitions(BOOL T)
-	= intercalate("\n", [genSD("<b.name>", b.left, b.right) | /BoolBind b := T, !contains("<b.name>", ".")])
-	+ "\n";
 
 ///////////////////////////////////////////////////////////////////
 private str Header(str name)

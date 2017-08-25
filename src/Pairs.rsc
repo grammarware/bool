@@ -27,15 +27,14 @@ alias IComplex = tuple[APair(APair, APair) mul, APair(APair, APair) add, APair(A
 APair implodePair(CPair T)
 	= < toInt("<T.x>"), toInt("<T.y>") >;
 APair implodePair(str input) = implodePair(parse(#CPair, input));
-
 APair addPoint (APair l, APair r) { return newPair(l.x+r.x, l.y+r.y);}
 APair subPoint (APair l, APair r) { return newPair(l.x-r.x, l.y-r.y);}
+APair mulComplex (APair l, APair r) { return newPair(l.x*r.x-l.y*r.y, l.y*r.x+l.x*r.y);}
 public IPoint Point = <
 	APair (APair l, APair r) { return newPair(l.x+r.x, l.y+r.y);},
 	APair (APair l, APair r) { return newPair(l.x-r.x, l.y-r.y);}
 >;
 
-APair mulComplex (APair l, APair r) { return newPair(l.x*r.x-l.y*r.y, l.y*r.x+l.x*r.y);}
 public IComplex Complex = <
 	APair (APair l, APair r) { return newPair(l.x*r.x-l.y*r.y, l.y*r.x+l.x*r.y);},
 	APair (APair l, APair r) { return newPair(l.x+r.x, l.y+r.y);},

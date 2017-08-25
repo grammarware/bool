@@ -29,13 +29,13 @@ APoint implodePoint(str input) = implodePoint(parse(#CPoint, input));
 ARectangle implodeRectangle(CRectangle T)
 	= < implodePoint(T.tl), implodePoint(T.br) >;
 ARectangle implodeRectangle(str input) = implodeRectangle(parse(#CRectangle, input));
-
 APoint addPoint (APoint l, APoint r) { return newPoint(l.x+r.x, l.y+r.y);}
+ARectangle squareRectangle (APoint tl, int side) { return newRectangle(tl, newPoint(tl.x+side,tl.y+side));}
+
 public IPoint Point = <
 	APoint (APoint l, APoint r) { return newPoint(l.x+r.x, l.y+r.y);}
 >;
 
-ARectangle squareRectangle (APoint tl, int side) { return newRectangle(tl, newPoint(tl.x+side,tl.y+side));}
 public IRectangle Rectangle = <
 	ARectangle (APoint tl, int side) { return newRectangle(tl, newPoint(tl.x+side,tl.y+side));}
 >;
