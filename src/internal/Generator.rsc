@@ -4,19 +4,12 @@ module internal::Generator
 import Prelude;
 import internal::ConcreteSyntax;
 
-void TransformBoolToRascal(str modname, loc infile, loc outfile)
+list[str] AllClasses = [];
+map[str,list[str]] AllMethods = ();
+
+map[str,list[str]] CollectMethodSignatures(BOOL T)
 {
-	T = parse(#start[BOOL], infile).top;
-	// Generate Rascal header
-	str text = genHeader(modname)
-	// Add "standard" library nonterminals
-			 + genStandard(T);
-	// Complete the concrete syntax part
-	for(/BoolBind b := T, !contains("<b.name>", "."))
-		text += genSD("<b.name>", b.left, b.right) + "\n";
-	// Collect methods' signatures
 	map[str,list[str]] methods = ();
-	list[str] classes = ["<name>" | /(BoolBind)`<UserId name>:= <BoolExpr _> ~ class[<{BoolExpr ","}+ _>]` := T];
 	for(/BoolBind b := T,
 		(BoolExpr)`fun[<{BoolExpr ","}+ inners>]` := b.left)
 		methods["<b.name>"]
@@ -30,9 +23,27 @@ void TransformBoolToRascal(str modname, loc infile, loc outfile)
 		(BoolExpr)`class[<{BoolExpr ","}+ inners>]` := b2.right,
 		(BoolExpr)`method <NormalId name>` <- inners)
 			methods["<b.name>.<name>"] = methods["<con>.<name>"];
+	return methods;
+}
+
+public void TransformBoolToRascal(str modname, loc infile, loc outfile)
+{
+	T = parse(#start[BOOL], infile).top;
+	
+	// Remember all classes
+	AllClasses = ["<name>" | /(BoolBind)`<UserId name>:= <BoolExpr _> ~ class[<{BoolExpr ","}+ _>]` := T];
+	// Collect methods' signatures
+	AllMethods = CollectMethodSignatures(T);
+	
+	// Generate Rascal header
+	str text = Header(modname)
+	// Add "standard" library nonterminals
+			 + StandardDefinitions(T)
+	// Complete the concrete syntax part
+			 + SyntaxDefinitions(T);
 	// Add the abstract syntax part
 	for(/BoolBind b := T, !contains("<b.name>", "."))
-		text += genADT("<b.name>", b.left, b.right, T, methods) + "\n";
+		text += genADT("<b.name>", b.left, b.right, T) + "\n";
 	// Concrete to abstract mapping
 	for(/BoolBind b := T,
 		!contains("<b.name>", "."),
@@ -48,7 +59,7 @@ void TransformBoolToRascal(str modname, loc infile, loc outfile)
 	}
 	// Compose clusters of methods
 	list[str] processed = [];
-	for(str c <- classes, /BoolBind b1 := T, startsWith("<b1.name>", c+"."))
+	for(str c <- AllClasses, /BoolBind b1 := T, startsWith("<b1.name>", c+"."))
 	{
 		if (c in processed) continue;
 		// Standalone methods
@@ -77,8 +88,12 @@ void TransformBoolToRascal(str modname, loc infile, loc outfile)
 	writeFile(outfile, text);
 }
 
+private str SyntaxDefinitions(BOOL T)
+	= intercalate("\n", [genSD("<b.name>", b.left, b.right) | /BoolBind b := T, !contains("<b.name>", ".")])
+	+ "\n";
+
 ///////////////////////////////////////////////////////////////////
-str genHeader(str name)
+private str Header(str name)
   = "@contributor{BOOL}
 	'module <name>
 	'
@@ -87,7 +102,7 @@ str genHeader(str name)
 	'";
 
 ///////////////////////////////////////////////////////////////////
-str genStandard(BOOL bs)
+private str StandardDefinitions(BOOL bs)
 {
 	str result = "";
 	if (/(NullaryOp)`word` := bs)
@@ -173,9 +188,9 @@ default str genLexSymbol(NullaryOp x)
 	= NonExhaustive("genLexSymbol", "<x>");
 
 ///////////////////////////////////////////////////////////////////
-str genADT(str _, BoolExpr _, (BoolExpr)`.`, BOOL allbinds, map[str,list[str]] methods)
+str genADT(str _, BoolExpr _, (BoolExpr)`.`, BOOL allbinds)
 	= "";
-default str genADT(str name, BoolExpr left, BoolExpr def, BOOL allbinds, map[str,list[str]] methods)
+default str genADT(str name, BoolExpr left, BoolExpr def, BOOL allbinds)
 {
 	if ("<def.con>" == "class")
 	{
@@ -197,20 +212,20 @@ default str genADT(str name, BoolExpr left, BoolExpr def, BOOL allbinds, map[str
 				//	fields += x;
 		}
 		return
-			"<if(!isEmpty(fields)){>alias A<name> = tuple[<intercalate(", ", [ToName(genType(f, methods, name)) | BoolExpr f <- fields])>];
+			"<if(!isEmpty(fields)){>alias A<name> = tuple[<intercalate(", ", [ToName(genType(f, name)) | BoolExpr f <- fields])>];
 			'<}>
-			'<if(!isEmpty(functs)){>alias I<name> = tuple[<intercalate(", ", [genType(f, methods, name) | BoolExpr f <- functs])>];
+			'<if(!isEmpty(functs)){>alias I<name> = tuple[<intercalate(", ", [genType(f, name) | BoolExpr f <- functs])>];
 			'<}>
-	  		'<if(!isEmpty(fields)){><genConstructor(def, methods, name)><}>";
+	  		'<if(!isEmpty(fields)){><genConstructor(def, AllMethods, name)><}>";
 	}
 	else
-		return "alias A<name> = <genType(def, methods, "<name>")>;";
+		return "alias A<name> = <genType(def, "<name>")>;";
 }
 
 str genConstructor((BoolExpr)`class[<{BoolExpr ","}+ inners>]`, map[str,list[str]] methods, str super)
 {
 	list[BoolExpr] fields = [inner | BoolExpr inner <- inners, (BoolExpr)`method <NormalId _>` !:= inner];
-	return  "A<super> new<super>(<intercalate(", ", [ToName(genType(field, methods, super)) | field <- fields])>)
+	return  "A<super> new<super>(<intercalate(", ", [ToName(genType(field, super)) | field <- fields])>)
 	  		'	= \< <intercalate(", ", ["<f.name>" | f <- fields])> \>;"; 
 }
 
@@ -219,26 +234,26 @@ default str genConstructor(BoolExpr e, map[str,list[str]] methods, str super)
 
 ///////////////////////////////////////////////////////////////////
 
-str genType((BoolExpr)`class[<{BoolExpr ","}+ inners>]`, map[str,list[str]] methods, str super)
-	= "tuple[" + intercalate(", ", [genType(inner, methods, super) | BoolExpr inner <- inners]) + "]";
-str genType((BoolExpr)`list[<BoolExpr inner>]`, map[str,list[str]] methods, str super)
-	= "list[<genType(inner, methods, super)>]";
-str genType((BoolExpr)`set[<BoolExpr inner>]`, map[str,list[str]] methods, str super)
-	= "set[<genType(inner, methods, super)>]";
-str genType((BoolExpr)`<NullaryOp con>`, map[str,list[str]] _, str super)
+str genType((BoolExpr)`class[<{BoolExpr ","}+ inners>]`, str super)
+	= "tuple[" + intercalate(", ", [genType(inner, super) | BoolExpr inner <- inners]) + "]";
+str genType((BoolExpr)`list[<BoolExpr inner>]`, str super)
+	= "list[<genType(inner, super)>]";
+str genType((BoolExpr)`set[<BoolExpr inner>]`, str super)
+	= "set[<genType(inner, super)>]";
+str genType((BoolExpr)`<NullaryOp con>`, str super)
 	= genTypeSymbol(con);
-str genType((BoolExpr)`method <NormalId name>`, map[str,list[str]] methods, str super)
+str genType((BoolExpr)`method <NormalId name>`, str super)
 {
-	list[str] args = methods["<super>.<name>"];
+	list[str] args = AllMethods["<super>.<name>"];
 	return "<ToName(args[0])>(<intercalate(", ", [ToName(a) | a <- args[1..]])>) <name>";
 }
-str genType((BoolExpr)`<NullaryOp con><NormalId name>`, map[str,list[str]] _, str super)
+str genType((BoolExpr)`<NullaryOp con><NormalId name>`, str super)
 	= "<genTypeSymbol(con)> <name>";
-str genType((BoolExpr)`<UserId con>`, _, _)
+str genType((BoolExpr)`<UserId con>`, _)
 	= "<con>";
-str genType((BoolExpr)`<UserId con><NormalId name>`, _, _)
+str genType((BoolExpr)`<UserId con><NormalId name>`, _)
 	= "<con> <name>";
-default str genType(BoolExpr x, _, _)
+default str genType(BoolExpr x, _)
 	= NonExhaustive("genType", "<x>");
 
 ///////////////////////////////////////////////////////////////////
@@ -252,10 +267,10 @@ default str genTypeSymbol(NullaryOp x)
 
 ///////////////////////////////////////////////////////////////////
 str genMethods(BoolBind b)
-	= "A<b.right.con> (<intercalate(", ", [ToName(genType(x,(),"<b.right.con>")) | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
+	= "A<b.right.con> (<intercalate(", ", [ToName(genType(x, "<b.right.con>")) | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
 
 str genSeparateMethod(BoolBind b)
-	= "A<b.right.con> <ReverseDot("<b.name>")> (<intercalate(", ", [ToName(genType(x,(),"<b.right.con>")) | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
+	= "A<b.right.con> <ReverseDot("<b.name>")> (<intercalate(", ", [ToName(genType(x, "<b.right.con>")) | BoolExpr x <- b.left.inners])>) { return new<b.right.con>(<intercalate(", ", ["<ba.expr>" | BoolAssignment ba <- b.right.inners])>);}";
 
 ///////////////////////////////////////////////////////////////////
 str genImplosion(str class, BoolBind b, BOOL allbinds)

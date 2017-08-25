@@ -8,7 +8,7 @@ import internal::Generator;
 
 void main()
 {
-	for(F <- ["Simple", "Point", "Rectangle"])//, "Pairs"])
+	for(F <- ["Simple", "Point", "Rectangle", "Pairs"])
 		TransformBoolToRascal(F,
 			|project://bool/code/<F>.bool|,
 			|project://bool/src/<F>.rsc|);
