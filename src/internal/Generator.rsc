@@ -35,7 +35,12 @@ public void TransformBoolToRascal(str modname, loc infile, loc outfile)
 }
 
 private str SyntaxDefinitions(BOOL T)
-	= intercalate("\n", [genSD("<b.name>", b.left, b.right) | /BoolBind b := T, !contains("<b.name>", ".")])
+	= intercalate("\n", [genSD("<b.name>", b.left, b.right) |
+		/BoolBind b := T,
+		!contains("<b.name>", "."),
+		(BoolExpr)`<UserId _>` !:= b.left,
+		(BoolExpr)`fun[<{BoolExpr ","}+ _>]` !:= b.left
+		])
 	+ "\n";
 
 private str AliasDefinitions(BOOL T)

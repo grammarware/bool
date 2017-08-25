@@ -7,8 +7,6 @@ lexical BoolInt = [0-9]+ !>> [0-9];
 layout Layout = [\  \t \n]* !>> [\  \t \n];
 
 syntax CPair = BoolInt x "," BoolInt y;
-syntax CPoint = CPair;
-syntax CComplex = CPoint;
 
 alias APair = tuple[int x, int y];
 
